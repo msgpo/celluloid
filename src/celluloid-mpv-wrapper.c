@@ -244,26 +244,19 @@ celluloid_mpv_set_property_flag(	CelluloidMpv *mpv,
 }
 
 void
-celluloid_mpv_set_render_update_callback(	CelluloidMpv *mpv,
-						mpv_render_update_fn func,
+celluloid_mpv_set_opengl_cb_callback(	CelluloidMpv *mpv,
+						mpv_opengl_cb_update_fn func,
 						void *data )
 {
 	CelluloidMpvPrivate *priv = get_private(mpv);
 
-	priv->render_update_callback = func;
-	priv->render_update_callback_data = data;
+	priv->opengl_cb_callback = func;
+	priv->opengl_cb_callback_data = data;
 
-	if(priv->render_ctx)
+	if(priv->opengl_ctx)
 	{
-		mpv_render_context_set_update_callback
-			(priv->render_ctx, func, data);
+		mpv_opengl_cb_set_update_callback(priv->opengl_ctx, func, data);
 	}
-}
-
-guint64
-celluloid_mpv_render_context_update(CelluloidMpv *mpv)
-{
-	return mpv_render_context_update(get_private(mpv)->render_ctx);
 }
 
 gint

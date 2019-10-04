@@ -49,6 +49,8 @@
 #include "celluloid-def.h"
 #include "celluloid-marshal.h"
 
+static void *GLAPIENTRY glMPGetNativeDisplay(const gchar *name);
+
 static void *
 get_proc_address(void *fn_ctx, const gchar *name);
 
@@ -91,12 +93,6 @@ process_mpv_events(gpointer data);
 static gboolean
 check_mpv_version(const gchar *version);
 
-static gpointer
-get_wl_display(void);
-
-static gpointer
-get_x11_display(void);
-
 static void
 initialize(CelluloidMpv *mpv);
 
@@ -108,10 +104,29 @@ reset(CelluloidMpv *mpv);
 
 G_DEFINE_TYPE_WITH_PRIVATE(CelluloidMpv, celluloid_mpv, G_TYPE_OBJECT)
 
+static void *GLAPIENTRY glMPGetNativeDisplay(const gchar *name)
+{
+       GdkDisplay *display = gdk_display_get_default();
+
+#ifdef GDK_WINDOWING_WAYLAND
+       if(GDK_IS_WAYLAND_DISPLAY(display) && g_strcmp0(name, "wl") == 0)
+               return gdk_wayland_display_get_wl_display(display);
+#endif
+#ifdef GDK_WINDOWING_X11
+       if(GDK_IS_X11_DISPLAY(display) && g_strcmp0(name, "x11") == 0)
+               return gdk_x11_display_get_xdisplay(display);
+#endif
+
+       return NULL;
+}
+
 static void *
 get_proc_address(void *fn_ctx, const gchar *name)
 {
 	GdkDisplay *display = gdk_display_get_default();
+
+	if(g_strcmp0(name, "glMPGetNativeDisplay") == 0)
+		return glMPGetNativeDisplay;
 
 #ifdef GDK_WINDOWING_WAYLAND
 	if (GDK_IS_WAYLAND_DISPLAY(display))
@@ -346,40 +361,6 @@ check_mpv_version(const gchar *version)
 	return result;
 }
 
-static gpointer
-get_wl_display(void)
-{
-	gpointer wl_display = NULL;
-
-#ifdef GDK_WINDOWING_WAYLAND
-	GdkDisplay *display = gdk_display_get_default();
-
-	if(GDK_IS_WAYLAND_DISPLAY(display))
-	{
-		wl_display =  gdk_wayland_display_get_wl_display(display);
-	}
-#endif
-
-	return wl_display;
-}
-
-static gpointer
-get_x11_display(void)
-{
-	gpointer x11_display = NULL;
-
-#ifdef GDK_WINDOWING_X11
-	GdkDisplay *display = gdk_display_get_default();
-
-	if(GDK_IS_X11_DISPLAY(display))
-	{
-		x11_display = gdk_x11_display_get_xdisplay(display);
-	}
-#endif
-
-	return x11_display;
-}
-
 static void
 initialize(CelluloidMpv *mpv)
 {
@@ -389,8 +370,8 @@ initialize(CelluloidMpv *mpv)
 
 	if(priv->wid < 0)
 	{
-		g_info("Forcing --vo=libmpv");
-		mpv_set_option_string(priv->mpv_ctx, "vo", "libmpv");
+		g_info("Forcing --vo=opengl-cb");
+		mpv_set_option_string(priv->mpv_ctx, "vo", "opengl-cb");
 	}
 	else if(priv->wid == 0)
 	{
@@ -418,6 +399,13 @@ initialize(CelluloidMpv *mpv)
 				MIN_MPV_MAJOR,
 				MIN_MPV_MINOR,
 				MIN_MPV_PATCH );
+	}
+
+	if(priv->use_opengl)
+	{
+		priv->opengl_ctx =	mpv_get_sub_api
+					(	priv->mpv_ctx,
+						MPV_SUB_API_OPENGL_CB );
 	}
 
 	priv->ready = TRUE;
@@ -487,10 +475,10 @@ reset(CelluloidMpv *mpv)
 	priv->mpv_ctx = mpv_create();
 	celluloid_mpv_initialize(mpv);
 
-	celluloid_mpv_set_render_update_callback
+	celluloid_mpv_set_opengl_cb_callback
 		(	mpv,
-			priv->render_update_callback,
-			priv->render_update_callback_data );
+			priv->opengl_cb_callback,
+			priv->opengl_cb_callback_data );
 
 	celluloid_mpv_set_property_string
 		(mpv, "loop-file", loop_file?"inf":"no");
@@ -638,13 +626,13 @@ celluloid_mpv_init(CelluloidMpv *mpv)
 	setlocale(LC_NUMERIC, "C");
 
 	priv->mpv_ctx = mpv_create();
-	priv->render_ctx = NULL;
+	priv->opengl_ctx = NULL;
 	priv->ready = FALSE;
 	priv->init_vo_config = TRUE;
 	priv->use_opengl = FALSE;
 	priv->wid = -1;
-	priv->render_update_callback_data = NULL;
-	priv->render_update_callback = NULL;
+	priv->opengl_cb_callback_data = NULL;
+	priv->opengl_cb_callback = NULL;
 }
 
 CelluloidMpv *
@@ -653,10 +641,10 @@ celluloid_mpv_new(gint64 wid)
 	return CELLULOID_MPV(g_object_new(celluloid_mpv_get_type(), "wid", wid, NULL));
 }
 
-inline mpv_render_context *
-celluloid_mpv_get_render_context(CelluloidMpv *mpv)
+inline mpv_opengl_cb_context *
+celluloid_mpv_get_opengl_cb_context(CelluloidMpv *mpv)
 {
-	return get_private(mpv)->render_ctx;
+	return get_private(mpv)->opengl_ctx;
 }
 
 inline gboolean
@@ -674,26 +662,19 @@ celluloid_mpv_initialize(CelluloidMpv *mpv)
 void
 celluloid_mpv_init_gl(CelluloidMpv *mpv)
 {
-	CelluloidMpvPrivate *priv = get_private(mpv);
-	mpv_opengl_init_params init_params =
-		{.get_proc_address = get_proc_address};
-	mpv_render_param params[] =
-		{	{MPV_RENDER_PARAM_API_TYPE, MPV_RENDER_API_TYPE_OPENGL},
-			{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init_params},
-			{MPV_RENDER_PARAM_WL_DISPLAY, get_wl_display()},
-			{MPV_RENDER_PARAM_X11_DISPLAY, get_x11_display()},
-			{0, NULL} };
-	gint rc = mpv_render_context_create(	&priv->render_ctx,
-						priv->mpv_ctx,
-						params );
+	mpv_opengl_cb_context *opengl_ctx = celluloid_mpv_get_opengl_cb_context(mpv);
+	gint rc = mpv_opengl_cb_init_gl(	opengl_ctx,
+						"GL_MP_MPGetNativeDisplay",
+						get_proc_address,
+						NULL );
 
 	if(rc >= 0)
 	{
-		g_debug("Initialized render context");
+		g_debug("Initialized opengl-cb");
 	}
 	else
 	{
-		g_critical("Failed to initialize render context");
+		g_critical("Failed to initialize opengl-cb");
 	}
 }
 
@@ -711,12 +692,12 @@ celluloid_mpv_quit(CelluloidMpv *mpv)
 	g_info("Terminating mpv");
 	celluloid_mpv_command_string(mpv, "quit");
 
-	if(priv->render_ctx)
+	if(priv->opengl_ctx)
 	{
-		g_debug("Uninitializing render context");
-		mpv_render_context_free(priv->render_ctx);
+		g_debug("Uninitializing opengl_ctx");
+		mpv_opengl_cb_uninit_gl(priv->opengl_ctx);
 
-		priv->render_ctx = NULL;
+		priv->opengl_ctx = NULL;
 	}
 
 	g_assert(priv->mpv_ctx);

@@ -443,7 +443,7 @@ apply_default_options(CelluloidMpv *mpv)
 		const gchar *name;
 		const gchar *value;
 	}
-	options[] = {	{"vo", "opengl,vdpau,vaapi,xv,x11,libmpv,"},
+	options[] = {	{"vo", "opengl,vdpau,vaapi,xv,x11,opengl-cb,"},
 			{"osd-level", "1"},
 			{"softvol", "yes"},
 			{"force-window", "immediate"},

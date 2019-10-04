@@ -119,7 +119,7 @@ static gboolean
 emit_frame_ready(gpointer data);
 
 static void
-render_update_callback(gpointer render_ctx);
+opengl_cb_update_callback(gpointer opengl_cb_ctx);
 
 static void
 mpv_prop_change_handler(	CelluloidMpv *mpv,
@@ -344,7 +344,7 @@ dispose(GObject *object)
 
 	if(mpv)
 	{
-		celluloid_mpv_set_render_update_callback(mpv, NULL, NULL);
+		celluloid_mpv_set_opengl_cb_callback(mpv, NULL, NULL);
 		while(g_source_remove_by_user_data(model));
 	}
 
@@ -559,19 +559,13 @@ g_param_spec_by_type(	const gchar *name,
 static gboolean
 emit_frame_ready(gpointer data)
 {
-	CelluloidModel *model = data;
-	guint64 flags = celluloid_mpv_render_context_update(CELLULOID_MPV(model));
-
-	if(flags&MPV_RENDER_UPDATE_FRAME)
-	{
-		g_signal_emit_by_name(model, "frame-ready");
-	}
+	g_signal_emit_by_name(data, "frame-ready");
 
 	return FALSE;
 }
 
 static void
-render_update_callback(gpointer data)
+opengl_cb_update_callback(gpointer data)
 {
 	g_idle_add_full(	G_PRIORITY_HIGH,
 				emit_frame_ready,
@@ -733,8 +727,8 @@ celluloid_model_initialize(CelluloidModel *model, const gchar *options)
 
 	celluloid_mpv_initialize
 		(mpv);
-	celluloid_mpv_set_render_update_callback
-		(mpv, render_update_callback, model);
+	celluloid_mpv_set_opengl_cb_callback
+		(mpv, opengl_cb_update_callback, model);
 }
 
 void
@@ -988,23 +982,15 @@ celluloid_model_initialize_gl(CelluloidModel *model)
 void
 celluloid_model_render_frame(CelluloidModel *model, gint width, gint height)
 {
-	mpv_render_context *render_ctx;
+	mpv_opengl_cb_context *opengl_ctx;
 
-	render_ctx = celluloid_mpv_get_render_context(CELLULOID_MPV(model));
+	opengl_ctx = celluloid_mpv_get_opengl_cb_context(CELLULOID_MPV(model));
 
-	if(render_ctx)
+	if(opengl_ctx)
 	{
-		gint fbo = -1;
+		int fbo = -1;
 		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
-
-		mpv_opengl_fbo opengl_fbo =
-			{fbo, width, height, 0};
-		mpv_render_param params[] =
-			{	{MPV_RENDER_PARAM_OPENGL_FBO, &opengl_fbo},
-				{MPV_RENDER_PARAM_FLIP_Y, &(int){1}},
-				{0, NULL} };
-
-		mpv_render_context_render(render_ctx, params);
+		mpv_opengl_cb_draw(opengl_ctx, fbo, width, (-1)*height);
 	}
 }
 

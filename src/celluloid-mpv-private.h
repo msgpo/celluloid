@@ -37,7 +37,7 @@ enum
 struct _CelluloidMpvPrivate
 {
 	mpv_handle *mpv_ctx;
-	mpv_render_context *render_ctx;
+	mpv_opengl_cb_context *opengl_ctx;
 	gboolean ready;
 	gchar *tmp_input_file;
 	GSList *log_level_list;
@@ -45,8 +45,8 @@ struct _CelluloidMpvPrivate
 	gboolean force_opengl;
 	gboolean use_opengl;
 	gint64 wid;
-	void *render_update_callback_data;
-	void (*render_update_callback)(void *data);
+	void *opengl_cb_callback_data;
+	void (*opengl_cb_callback)(void *data);
 };
 
 #define get_private(mpv) \

@@ -159,15 +159,15 @@
  <screenshots>
   <screenshot type="default">
    <image>http://celluloid-player.github.io/images/screenshot-0.png</image>
-   <caption>The main window showing the application in action</caption>
+   <caption></caption>
   </screenshot>
   <screenshot>
    <image>http://celluloid-player.github.io/images/screenshot-1.png</image>
-   <caption>The main window with CSD disabled</caption>
+   <caption></caption>
   </screenshot>
   <screenshot>
    <image>http://celluloid-player.github.io/images/screenshot-2.png</image>
-   <caption>The main window with playlist open</caption>
+   <caption></caption>
   </screenshot>
  </screenshots>
  <url type="homepage">http://celluloid-player.github.io</url>

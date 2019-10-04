@@ -22,7 +22,7 @@
 
 #include <glib.h>
 #include <mpv/client.h>
-#include <mpv/render_gl.h>
+#include <mpv/opengl_cb.h>
 
 #include "celluloid-mpv.h"
 
@@ -74,12 +74,9 @@ celluloid_mpv_set_event_callback(	CelluloidMpv *mpv,
 					void *data );
 
 void
-celluloid_mpv_set_render_update_callback(	CelluloidMpv *mpv,
-						mpv_render_update_fn func,
+celluloid_mpv_set_opengl_cb_callback(	CelluloidMpv *mpv,
+						mpv_opengl_cb_update_fn func,
 						void *data );
-
-guint64
-celluloid_mpv_render_context_update(CelluloidMpv *mpv);
 
 gint
 celluloid_mpv_load_config_file(CelluloidMpv *mpv, const gchar *filename);

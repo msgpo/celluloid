@@ -23,7 +23,7 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <mpv/client.h>
-#include <mpv/render_gl.h>
+#include <mpv/opengl_cb.h>
 
 #include "celluloid-common.h"
 
@@ -54,8 +54,8 @@ struct _CelluloidMpvClass
 CelluloidMpv *
 celluloid_mpv_new(gint64 wid);
 
-mpv_render_context *
-celluloid_mpv_get_render_context(CelluloidMpv *mpv);
+mpv_opengl_cb_context *
+celluloid_mpv_get_opengl_cb_context(CelluloidMpv *mpv);
 
 gboolean
 celluloid_mpv_get_use_opengl_cb(CelluloidMpv *mpv);
