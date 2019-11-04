@@ -1,3 +1,23 @@
+celluloid (0.17-0mint1) tricia; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Fix compatibility with Mint 19.x
+  * Add dependency on ffmpegthumbnailer
+
+  [ gnome-mpv ]
+  * model: Work around mpv crash when running keyup command without arguments
+  * player-options: Remove code for handling --fullscreen
+  * Handle mpv option --border
+  * Sync translations from Zanata
+  * Update description in AppData
+  * Update desktop file
+  * view: Do not resize window in fullscreen mode
+
+  [ Clement Lefebvre ]
+  * l10n: Add translations to desktop file
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 04 Nov 2019 16:05:27 +0000
+
 celluloid (0.17-1~bionic2) bionic; urgency=low
 
   * New upstream release.
