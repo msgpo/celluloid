@@ -13,7 +13,8 @@ Build-Depends: debhelper (>= 9),
                libglib2.0-dev (>= 2.44),
                libgtk-3-dev (>= 3.22.23),
                libmpv-dev (>= 0.25.0),
-               ffmpegthumbnailer
+               ffmpegthumbnailer,
+               meson
 Standards-Version: 4.4.0
 Homepage: https://github.com/gnome-mpv/gnome-mpv
 
