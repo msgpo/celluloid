@@ -1,3 +1,9 @@
+celluloid (0.17-0mint2) tricia; urgency=medium
+
+  * Add dependency on ffmpegthumbnailer
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 04 Dec 2019 10:45:52 +0000
+
 celluloid (0.17-0mint1) tricia; urgency=medium
 
   [ Clement Lefebvre ]
