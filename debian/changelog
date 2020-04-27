@@ -1,3 +1,11 @@
+celluloid (0.19-linuxmint1) ulyana; urgency=medium
+
+  * Add dependency on ffmpegthumbnailer
+  * Add build-dep on meson
+  * l10n: Add translations to desktop file
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 27 Apr 2020 11:44:20 +0100
+
 celluloid (0.17-1~bionic2) bionic; urgency=low
 
   * New upstream release.
